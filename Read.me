@@ -1,0 +1,272 @@
+Pokédex Service : (https://pokeapi.co)
+Ziel
+
+Entwickle eine Spring-Boot-Anwendung, die Pokémon-Daten aus der PokéAPI lädt und eine persönliche Favoriten-Sammlung verwaltet.
+
+Dabei sollen folgende Themen angewendet werden:
+
+RestClient
+DTOs
+Spring Validation
+Exception Handling mit @RestControllerAdvice
+CRUD-Endpunkte
+Spring Data MongoDB
+Aufgabe 1: PokéAPI anbinden
+Ziel
+
+Binde die PokéAPI an und liefere vereinfachte Pokémon-Daten über einen eigenen Endpoint zurück.
+
+Endpoint
+
+GET /api/pokemon/{name}
+Beispiel
+
+GET /api/pokemon/clefairy
+Beispielantwort
+
+{
+  "id": "1",
+  "pokemonId": "35",
+  "nickname": null,
+  "pokemonName": "clefairy",
+  "pictureUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/35.png",
+  "height": 6,
+  "weight": 75,
+  "types": [
+    "fairy"
+  ]
+}
+Aufgabe 2: Favoriten anlegen (CREATE)
+Ziel
+
+Benutzer sollen Pokémon in ihrer persönlichen Favoriten-Sammlung speichern können.
+
+Die Favoriten werden in einer MongoDB Datenbank gespeichert.
+
+Felder
+
+@Id
+private String id;
+
+private String pokemonId;
+
+private String nickname;
+
+private String pokemonName;
+private String pictureUrl;
+
+private int height;
+private int weight;
+
+private List<String> types;
+Hinweise zum Modell
+
+id ist die primäre ID des Favoriten-Eintrags → wird als UUID generiert → muss mit @Id annotiert werden
+
+pokemonId ist die unveränderte ID des Pokémon aus der PokéAPI → dient zur eindeutigen Referenz auf das ursprüngliche Pokémon
+
+DTO-Trennung (WICHTIG)
+
+Es müssen zwei verschiedene DTOs verwendet werden:
+
+1. PokéAPI DTO (Response Mapping)
+
+→ Wird ausschließlich für das Mapping der externen PokéAPI verwendet
+→ enthält nur die benötigten Felder und Verschachtelungen → Wird in Entity/Datentyp umgewandelt und an den Client zurückgegeben
+
+2. Favorite DTO (internes System)
+
+→ Verfügt nur über zwei Felder: pokemonName und nickname → Wird intern auf die Datenbank Entity gemappt (Anfrage an API + ID generieren)
+
+Endpoint
+
+POST /api/collection
+Request
+
+{
+  "pokemonName": "pikachu",
+  "nickname": "Mein Starter"
+}
+Anforderungen
+
+Schritt 1
+
+Über die PokéAPI prüfen, ob das Pokémon existiert.
+
+Schritt 2
+
+Folgende Daten aus der API übernehmen:
+
+Pokémon-ID (pokemonId)
+Name
+Bild-URL
+Größe
+Gewicht
+Typen
+Schritt 3
+
+Ein eigenes Objekt erzeugen und in MongoDB speichern.
+
+Dabei gilt:
+
+id wird als UUID erzeugt
+Speicherung erfolgt über Spring Data MongoDB Repository
+Beispiel eines gespeicherten Objekts
+
+{
+  "id": "4b903fd9-93df-4fd9-a4fc-1b89b7d1b0f5",
+  "pokemonId": "25",
+  "nickname": "Mein Starter",
+
+  "pokemonName": "pikachu",
+  "pictureUrl": "https://raw.githubusercontent.com/...",
+
+  "height": 4,
+  "weight": 60,
+
+  "types": [
+    "electric"
+  ]
+}
+Aufgabe 3: Validation integrieren
+Ziel
+
+Ungültige Eingaben sollen abgefangen werden.
+
+Erwartetes Verhalten
+
+Folgende Anfrage soll fehlschlagen:
+
+{
+  "pokemonName": "",
+  "nickname": ""
+}
+Ebenso:
+
+{
+  "pokemonName": "pikachu",
+  "nickname": "A"
+}
+Aufgabe 4: Sammlung verwalten (READ + DELETE)
+Alle Favoriten abrufen
+
+GET /api/collection
+Einzelnen Favoriten abrufen
+
+GET /api/collection/{id}
+Favoriten löschen
+
+DELETE /api/collection/{id}
+Anforderungen
+
+Alle Daten sollen aus der lokalen Datenbank geliefert werden.
+
+Es sollen keine zusätzlichen Aufrufe zur PokéAPI notwendig sein.
+
+Fehlerfall
+
+Wird eine unbekannte ID angefragt oder gelöscht, soll eine eigene Exception geworfen werden.
+
+Aufgabe 5: Favoriten bearbeiten (UPDATE)
+Ziel
+
+Der Benutzer soll den Nickname eines gespeicherten Favoriten ändern können.
+
+Endpoint
+
+PUT /api/collection/{id}
+Request
+
+{
+  "nickname": "Arena-Champion"
+}
+Anforderungen
+
+Nur den Nickname aktualisieren
+Pokémon-Daten bleiben unverändert
+Validation verwenden
+Aufgabe 6: Globales Exception Handling
+Ziel
+
+Alle Fehler sollen zentral behandelt werden.
+
+Verwende
+
+@RestControllerAdvice
+Behandle mindestens
+
+PokemonNotFoundException
+
+Wird geworfen, wenn die PokéAPI kein Pokémon zurückliefert.
+
+CollectionEntryNotFoundException
+
+Wird geworfen, wenn ein Favorit nicht existiert.
+
+MethodArgumentNotValidException
+
+Wird bei Validierungsfehlern behandelt.
+
+Beispielantwort
+
+{
+  "message": "Pokemon not found",
+  "timestamp": "2026-06-01T10:15:00"
+}
+Bonus-Aufgaben
+Bonus 1: Zufälliges Pokémon
+
+Endpoint
+
+GET /api/pokemon/random
+Ziel
+
+Ermittle zufällig eine Pokémon-ID und lade die Daten aus der PokéAPI.
+
+Bonus 2: Favoriten durchsuchen
+
+Endpoint
+
+GET /api/collection/search?name=pika
+Ziel
+
+Suche nach:
+
+Pokémon-Namen
+Nicknames
+Bonus 3: Pokémon vergleichen
+
+Endpoint
+
+GET /api/pokemon/compare/{pokemon1}/{pokemon2}
+Ziel
+
+Vergleiche:
+
+Größe
+Gewicht
+Beispielantwort
+
+{
+  "heavierPokemon": "charizard",
+  "weightDifference": 845
+}
+Hinweis
+
+Für diese Aufgabe müssen zwei API-Aufrufe durchgeführt und die Ergebnisse zusammengeführt werden.
+
+Bonus 4: Pokémon nach Typ suchen
+
+Endpoint
+
+GET /api/pokemon/type/{type}
+Beispiel
+
+GET /api/pokemon/type/fire
+Ziel
+
+Lade alle Pokémon eines bestimmten Typs über die PokéAPI und liefere eine vereinfachte Liste zurück.
+
+Hinweis
+
+Die benötigten Informationen befinden sich in einem anderen Bereich der PokéAPI und müssen eigenständig recherchiert werden.
